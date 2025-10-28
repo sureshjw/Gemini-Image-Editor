@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Image Editor",
+  "description": "An application that allows users to edit images by providing text prompts. Leveraging Gemini 2.5 Flash Image, users can perform tasks like removing backgrounds, cleaning up product photos, or applying filters simply by typing instructions.",
+  "requestFramePermissions": []
+}
