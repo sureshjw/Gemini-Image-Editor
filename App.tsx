@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { EditPanel } from './components/EditPanel';
@@ -18,10 +18,15 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
   const handleImageUpload = useCallback(async (file: File) => {
     try {
       setError(null);
       setEditedImage(null);
+      setHistory([]);
+      setHistoryIndex(-1);
       const { base64Data, dataUrl } = await fileToBase64(file);
       setOriginalImage({ file, base64Data, dataUrl });
     } catch (err) {
@@ -38,15 +43,28 @@ const App: React.FC = () => {
     
     setIsLoading(true);
     setError(null);
-    setEditedImage(null);
 
     try {
+       // Use the current image state for the edit (original or from history)
+      const currentImageBase64 = historyIndex === -1 
+        ? originalImage.base64Data 
+        : history[historyIndex].split(',')[1];
+
       const newBase64Data = await editImageWithPrompt(
-        originalImage.base64Data,
+        currentImageBase64,
         originalImage.file.type,
         prompt
       );
-      setEditedImage(`data:${originalImage.file.type};base64,${newBase64Data}`);
+      
+      const newImageUrl = `data:${originalImage.file.type};base64,${newBase64Data}`;
+      
+      // Create new history from current point, discarding old "redo" states
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newImageUrl);
+      
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+
     } catch (err) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -54,7 +72,31 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [originalImage]);
+  }, [originalImage, history, historyIndex]);
+  
+  const handleUndo = useCallback(() => {
+    if (historyIndex >= 0) {
+      setHistoryIndex(historyIndex - 1);
+    }
+  }, [historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+    }
+  }, [historyIndex, history]);
+  
+  // Effect to update the displayed image when history changes
+  useEffect(() => {
+    if (historyIndex === -1) {
+        setEditedImage(null);
+    } else if (history[historyIndex]) {
+        setEditedImage(history[historyIndex]);
+    }
+  }, [history, historyIndex]);
+
+  const canUndo = historyIndex >= 0;
+  const canRedo = historyIndex < history.length - 1;
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
@@ -76,6 +118,10 @@ const App: React.FC = () => {
               isLoading={isLoading}
               error={error}
               isReadyToEdit={originalImage !== null}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
             />
           </div>
         </div>

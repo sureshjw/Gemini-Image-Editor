@@ -32,7 +32,20 @@ export const editImageWithPrompt = async (
       },
     });
 
-    for (const part of response.candidates[0].content.parts) {
+    const candidate = response.candidates?.[0];
+
+    if (!candidate || !candidate.content || !candidate.content.parts) {
+      if (response.promptFeedback?.blockReason) {
+        throw new Error(
+          `Request was blocked: ${response.promptFeedback.blockReason}. Please adjust your prompt.`
+        );
+      }
+      throw new Error(
+        "The API returned an empty response. Please try a different prompt."
+      );
+    }
+
+    for (const part of candidate.content.parts) {
       if (part.inlineData) {
         return part.inlineData.data;
       }
@@ -41,6 +54,9 @@ export const editImageWithPrompt = async (
     throw new Error("No image data found in the API response.");
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    throw new Error("The request to the Gemini API failed. Please check your prompt or try again later.");
+    if (error instanceof Error) {
+        throw error;
+    }
+    throw new Error("An unknown error occurred while calling the Gemini API.");
   }
 };

@@ -7,6 +7,10 @@ interface EditPanelProps {
   isLoading: boolean;
   error: string | null;
   isReadyToEdit: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -25,7 +29,29 @@ const ResultPlaceholder: React.FC = () => (
     </div>
 );
 
-export const EditPanel: React.FC<EditPanelProps> = ({ onGenerate, editedImageUrl, isLoading, error, isReadyToEdit }) => {
+const UndoIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+    </svg>
+);
+
+const RedoIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+    </svg>
+);
+
+export const EditPanel: React.FC<EditPanelProps> = ({ 
+    onGenerate, 
+    editedImageUrl, 
+    isLoading, 
+    error, 
+    isReadyToEdit,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo
+}) => {
   const [prompt, setPrompt] = useState('');
   
   const examplePrompts = [
@@ -89,12 +115,35 @@ export const EditPanel: React.FC<EditPanelProps> = ({ onGenerate, editedImageUrl
         </div>
       </div>
       
-      <div className="flex-grow w-full aspect-square bg-gray-900 rounded-lg flex justify-center items-center overflow-hidden">
-        {isLoading && <LoadingSpinner />}
-        {!isLoading && editedImageUrl && (
-          <img src={editedImageUrl} alt="Edited result" className="w-full h-full object-contain" />
-        )}
-        {!isLoading && !editedImageUrl && <ResultPlaceholder />}
+      <div className="flex-grow flex flex-col">
+        <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-gray-300">Result</h3>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={onUndo}
+                    disabled={!canUndo || isLoading}
+                    className="p-2 rounded-md bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Undo"
+                >
+                    <UndoIcon />
+                </button>
+                <button
+                    onClick={onRedo}
+                    disabled={!canRedo || isLoading}
+                    className="p-2 rounded-md bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Redo"
+                >
+                    <RedoIcon />
+                </button>
+            </div>
+        </div>
+        <div className="w-full aspect-square bg-gray-900 rounded-lg flex justify-center items-center overflow-hidden">
+            {isLoading && <LoadingSpinner />}
+            {!isLoading && editedImageUrl && (
+            <img src={editedImageUrl} alt="Edited result" className="w-full h-full object-contain" />
+            )}
+            {!isLoading && !editedImageUrl && <ResultPlaceholder />}
+        </div>
       </div>
        {error && <p className="mt-2 text-sm text-red-400 text-center">{error}</p>}
     </div>
