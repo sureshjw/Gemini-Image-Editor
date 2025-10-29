@@ -4,6 +4,8 @@ import React, { useRef, useState, useCallback } from 'react';
 interface ImageUploaderProps {
   onImageUpload: (file: File) => void;
   previewUrl: string | undefined;
+  aspectRatioClass: string;
+  imageStyle: React.CSSProperties;
 }
 
 const UploadIcon: React.FC = () => (
@@ -13,7 +15,7 @@ const UploadIcon: React.FC = () => (
 );
 
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, previewUrl }) => {
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, previewUrl, aspectRatioClass, imageStyle }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -63,7 +65,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, pre
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
-        className={`w-full aspect-square border-2 border-dashed rounded-lg flex flex-col justify-center items-center cursor-pointer transition-all duration-300 ${isDragging ? 'border-cyan-400 bg-gray-700/50' : 'border-gray-600 hover:border-cyan-500 hover:bg-gray-700/30'}`}
+        className={`w-full ${aspectRatioClass} border-2 border-dashed rounded-lg flex flex-col justify-center items-center cursor-pointer transition-all duration-300 ${isDragging ? 'border-cyan-400 bg-gray-700/50' : 'border-gray-600 hover:border-cyan-500 hover:bg-gray-700/30'}`}
       >
         <input
           type="file"
@@ -73,7 +75,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, pre
           accept="image/png, image/jpeg, image/webp"
         />
         {previewUrl ? (
-          <img src={previewUrl} alt="Preview" className="w-full h-full object-contain rounded-lg p-2" />
+          <img 
+            src={previewUrl} 
+            alt="Preview" 
+            className="w-full h-full object-contain rounded-lg p-2" 
+            style={imageStyle}
+          />
         ) : (
           <div className="text-center">
             <UploadIcon />

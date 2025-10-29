@@ -12,11 +12,40 @@ export interface ImageState {
   dataUrl: string;
 }
 
+type FilterType = 'none' | 'grayscale' | 'sepia' | 'invert';
+
+const getAspectRatioClass = (ratio: string): string => {
+  switch (ratio) {
+    case '1:1':
+      return 'aspect-square';
+    case '16:9':
+      return 'aspect-video';
+    case '9:16':
+      return 'aspect-[9/16]';
+    case '4:3':
+      return 'aspect-[4/3]';
+    case '3:4':
+      return 'aspect-[3/4]';
+    default:
+      if (ratio && ratio.includes(':')) {
+        const [w, h] = ratio.split(':');
+        return `aspect-[${w}/${h}]`;
+      }
+      return 'aspect-square';
+  }
+};
+
+
 const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<ImageState | null>(null);
   const [editedImage, setEditedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+  
+  const [filter, setFilter] = useState<FilterType>('none');
+  const [brightness, setBrightness] = useState<number>(100);
+  const [contrast, setContrast] = useState<number>(100);
 
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -27,6 +56,9 @@ const App: React.FC = () => {
       setEditedImage(null);
       setHistory([]);
       setHistoryIndex(-1);
+      setFilter('none');
+      setBrightness(100);
+      setContrast(100);
       const { base64Data, dataUrl } = await fileToBase64(file);
       setOriginalImage({ file, base64Data, dataUrl });
     } catch (err) {
@@ -97,6 +129,17 @@ const App: React.FC = () => {
 
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < history.length - 1;
+  const aspectRatioClass = getAspectRatioClass(aspectRatio);
+  
+  const imageStyle: React.CSSProperties = {
+    filter: `
+      brightness(${brightness / 100})
+      contrast(${contrast / 100})
+      ${filter === 'grayscale' ? 'grayscale(100%)' : ''}
+      ${filter === 'sepia' ? 'sepia(100%)' : ''}
+      ${filter === 'invert' ? 'invert(100%)' : ''}
+    `.trim(),
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
@@ -108,6 +151,8 @@ const App: React.FC = () => {
             <ImageUploader 
               onImageUpload={handleImageUpload} 
               previewUrl={originalImage?.dataUrl}
+              aspectRatioClass={aspectRatioClass}
+              imageStyle={imageStyle}
             />
           </div>
 
@@ -122,6 +167,16 @@ const App: React.FC = () => {
               onRedo={handleRedo}
               canUndo={canUndo}
               canRedo={canRedo}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={setAspectRatio}
+              aspectRatioClass={aspectRatioClass}
+              filter={filter}
+              onFilterChange={setFilter}
+              brightness={brightness}
+              onBrightnessChange={setBrightness}
+              contrast={contrast}
+              onContrastChange={setContrast}
+              imageStyle={imageStyle}
             />
           </div>
         </div>
